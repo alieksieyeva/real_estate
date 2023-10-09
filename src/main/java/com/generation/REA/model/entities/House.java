@@ -33,6 +33,17 @@ public class House
 	private int smp;
 	private Double area;
 	
+	public boolean isValid()
+	{
+		return 	city!=null 			&& !city.isBlank() 			&&
+				address!=null 		&& !address.isBlank() 		&&
+				type!=null 			&& !type.isBlank()			&&
+				img_url!=null 		&& !img_url.isBlank() 		&&
+				description!=null 	&& !description.isBlank() 	&&
+				smp>=0											&&
+				area>0											 ;
+	}
+	
 	@ManyToOne(fetch = FetchType.EAGER) 
 	@JoinColumn(name="agent_id")
 	@JsonIgnore

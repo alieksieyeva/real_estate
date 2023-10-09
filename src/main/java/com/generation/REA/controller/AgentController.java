@@ -20,6 +20,7 @@ import com.generation.REA.model.entities.Agent;
 import com.generation.REA.model.entities.dto.agent.AgentDTOFull;
 import com.generation.REA.model.entities.dto.agent.AgentDTONoList;
 import com.generation.REA.model.repository.AgentRepository;
+import com.generation.REA.controller.util.*;
 
 @CrossOrigin
 @RestController
@@ -46,8 +47,6 @@ public class AgentController
 		return aRepo.findAll().stream().map(agent -> new AgentDTOFull(agent)).toList();
 	}
 	
-
-	
 	@GetMapping("/agents/nolist")
 	public List<AgentDTONoList> getAllNoList()
 	{
@@ -60,31 +59,35 @@ public class AgentController
 	{
 		Agent toInsert = dto.convertToAgent();
 		if(toInsert.isValid())
-			return new ResponseEntity<Object> (aRepo.save(toInsert), HttpStatus.CREATED);
+			return new ResponseEntity<Object> (new AgentDTONoList(aRepo.save(toInsert)), HttpStatus.CREATED);
 		return new ResponseEntity<Object> ("non è andata bene", HttpStatus.BAD_REQUEST);
 		
 	}
 	
 	//Mappature su ID
 	@GetMapping("/agents/{id}")
-	public Agent getOne(@PathVariable int id)
+	public AgentDTOFull getOne(@PathVariable int id)
 	{
 		if(aRepo.findById(id).isEmpty())
-			throw new NoSuchElementException("non ho trovato il prodotto che vuoi leggere");
-			
-		return aRepo.findById(id).get();
+			throw new NoSuchElementException("non ho trovato l'elemento che vuoi leggere");
+		
+		AgentDTOFull letto = new AgentDTOFull(aRepo.findById(id).get());
+		return letto;
 	}
 	
 
 	@PutMapping("/agents/{id}")
-	public Agent updateOne(@PathVariable int id,@RequestBody Agent toModify)
+	public ResponseEntity <Object> updateOne(@PathVariable int id,@RequestBody AgentDTONoList dto)
 	{
 		if(aRepo.findById(id).isEmpty())
-			throw new NoSuchElementException("Non ho trovato su Db prodotto che vuoi modificare");
-		toModify.setId(id);
-		return aRepo.save(toModify);
+			throw new NoSuchElementException("Non ho trovato su Db persona che vuoi modificare");
+		
+		dto.setId(id);
+		Agent toModify= dto.convertToAgent();
+		return new ResponseEntity <Object> (new AgentDTONoList(aRepo.save(toModify)), HttpStatus.ACCEPTED);
 	}
 	
+	//NON CREDO SIA DA MODIFICARE CON DTO
 	@DeleteMapping("/agents/{id}")
 	public void deleteOne(@PathVariable int id)
 	{
@@ -93,13 +96,5 @@ public class AgentController
 		aRepo.deleteById(id);
 	}
 	
-	//ExceptionHandler cattura questa eccezione per qualsiasi metodo di questa classe controller
-					//il tipo di eccezione da gestire
-	@ExceptionHandler(NoSuchElementException.class) //come catch(NoSuchElementException e)
-	public  ResponseEntity <String> handleNoSuchElementException(NoSuchElementException e)
-	{
-		return new ResponseEntity <String>(e.getMessage(), HttpStatus.NOT_FOUND);
-		//questo metodo d ala response nel caso in qui questa eccezione si verifichi in qualsiasi punto di questa classe 
-	}
 	
 }
