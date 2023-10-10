@@ -26,6 +26,7 @@ import com.generation.REA.controller.util.*;
 @RestController
 public class AgentController 
 {
+	//generici problemi con il DB per ogni metodo che usa le repository (TUTTI), errore codice 503 (service unavailable)
 	
 	@Autowired
 	AgentRepository aRepo;
@@ -57,6 +58,8 @@ public class AgentController
 	@PostMapping("/agents")
 	public ResponseEntity<Object> insert(@RequestBody AgentDTONoList dto)
 	{
+		//problemi conversione JSON in dto, MethodArgumentTypeMismatchException, errore 400 (BAD REQUEST)
+		//agente da inserire non valido, InvalidEntityException, errore 400
 		Agent toInsert = dto.convertToAgent();
 		if(toInsert.isValid())
 			return new ResponseEntity<Object> (new AgentDTONoList(aRepo.save(toInsert)), HttpStatus.CREATED);
@@ -68,6 +71,9 @@ public class AgentController
 	@GetMapping("/agents/{id}")
 	public AgentDTOFull getOne(@PathVariable int id)
 	{
+		//problemi conversione parametro id, MethodArgumentTypeMismatchException
+		//mancanza parametro id, cercate,           sempre errore 400
+		// Agente non presente, errore 404
 		if(aRepo.findById(id).isEmpty())
 			throw new NoSuchElementException("non ho trovato l'elemento che vuoi leggere");
 		
@@ -79,11 +85,15 @@ public class AgentController
 	@PutMapping("/agents/{id}")
 	public ResponseEntity <Object> updateOne(@PathVariable int id,@RequestBody AgentDTONoList dto)
 	{
+		//problemi conversione parametro id, MethodArgumentTypeMismatchException
+		//mancanza parametro id, cercate,           sempre errore 400
+		// Agente non presente, errore 404
 		if(aRepo.findById(id).isEmpty())
 			throw new NoSuchElementException("Non ho trovato su Db persona che vuoi modificare");
 		
 		dto.setId(id);
 		Agent toModify= dto.convertToAgent();
+		//agente modificato non valido, InvalidEntityException, errore 400
 		return new ResponseEntity <Object> (new AgentDTONoList(aRepo.save(toModify)), HttpStatus.ACCEPTED);
 	}
 	
@@ -91,6 +101,10 @@ public class AgentController
 	@DeleteMapping("/agents/{id}")
 	public void deleteOne(@PathVariable int id)
 	{
+		//Agente non presente
+		
+		//Controllo aggiuntivo, possiamo cancellare agenti solo SE NON HANNO CASE FIGLIE
+		//nel caso un agente abbia case lanciare eccezione ForbiddenDeleteException (da creare) e dare come codice 403 (forbidden)
 		if(aRepo.findById(id).isEmpty())
 			throw new NoSuchElementException("Non ho trovato su Db prodotto che vuoi cancellare");
 		aRepo.deleteById(id);

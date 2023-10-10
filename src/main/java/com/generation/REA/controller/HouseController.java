@@ -25,6 +25,8 @@ import com.generation.REA.model.repository.HouseRepository;
 @RestController
 public class HouseController 
 {
+	
+	//generici problemi con il DB per ogni metodo che usa le repository (TUTTI), errore codice 503 (service unavailable)
 	@Autowired
 	HouseRepository repo;
 	 
@@ -69,6 +71,7 @@ public class HouseController
 	@PostMapping("/houses")
 	public House insert(@RequestBody HouseDTO dto)
 	{ 
+		//come quello sotto
 		Agent padre= aRepo.findById(dto.getAgent_id()).get(); //uso l'ID del padre nel DTO per prenderlo dal db
 		House toInsert = dto.convertToHouse(); //converto il dto in una House senza agente
 		toInsert.setAgente(padre);//imposto l'agente padre
@@ -100,12 +103,16 @@ public class HouseController
 	@GetMapping("/houses/{id}")
 	public HouseDTO getOne(@PathVariable int id)
 	{
+		//parametro mancante o di tipo sbagliato
 		return new HouseDTO(repo.findById(id).get());
 	}
 	
 	@GetMapping("/agents/{idPadre}/houses/{idFiglio}")
 	public HouseDTO getOneByAgent(@PathVariable Integer idPadre,@PathVariable Integer idFiglio)
 	{
+		//parametro mancante o di tipo sbagliato
+		//Padre non trovato o figlio non trovato, entrambi errore 404 ma con testo diverso
+		
 		HouseDTO res = new HouseDTO(repo.findById(idFiglio).get());
 		if(res.getAgent_id()!=idPadre)
 			return null;
@@ -117,11 +124,13 @@ public class HouseController
 	public HouseDTO updateOneByAgent
 	(@PathVariable Integer idPadre,@PathVariable Integer idFiglio,@RequestBody HouseDTO dto)
 	{
-		//imposto l'id
+		//sempre soliti problemi con parametri
+		
+		//Padre non trovato o figlio non trovato, entrambi errore 404 ma con testo diverso
+		//figlio modificato non valido, InvalidEntityException, errore 400
+		
 		dto.setId(idFiglio);
 		House toUpdate= dto.convertToHouse(); 
-		
-		
 		
 		Agent padre = aRepo.findById(idPadre).get();
 		toUpdate.setAgente(padre);
@@ -132,6 +141,7 @@ public class HouseController
 	@GetMapping("/houses/city/{city}")
 	public List<HouseDTO> getByCity(@PathVariable String city)
 	{
+		//parametro mancante
 		return repo.findByCity(city)
 				.stream().map(casa -> new HouseDTO(casa)).toList();
 	}
@@ -140,6 +150,8 @@ public class HouseController
 	@PutMapping("/houses/{id}")
 	public House updateOne(@PathVariable int id,@RequestBody HouseDTO dto)
 	{
+		
+		//problemi parametri o casa da modificare non valida
 		dto.setId(id);
 		House toModify = dto.convertToHouse();
 		return repo.save(toModify);
@@ -148,6 +160,7 @@ public class HouseController
 	@DeleteMapping("/agents/{idPadre}/houses/{idFiglio}")
 	public void deleteOneByAgent(@PathVariable Integer idPadre,@PathVariable Integer idFiglio)
 	{
+		//problemi parametri o casa/agente non trovati
 		House res = repo.findById(idFiglio).get();
 		if(res.getAgente().getId()!=idPadre)
 			return;
@@ -158,6 +171,7 @@ public class HouseController
 	@DeleteMapping("/houses/{id}")
 	public void deleteOne(@PathVariable int id)
 	{
+		//problemi parametri o casa non trovata
 		repo.deleteById(id);
 	}
 	
