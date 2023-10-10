@@ -45,8 +45,20 @@ public class GestoreEccezioni
 	}
 	
 	@ExceptionHandler(MissingPathVariableException.class) 
-	public  ResponseEntity <String> handleMissingPathVariableException(MissingPathVariableException e)
+	public ResponseEntity <String> handleMissingPathVariableException(MissingPathVariableException e)
 	{
 		return new ResponseEntity <String>("occhio al parametro vuoto", HttpStatus.BAD_REQUEST);
+	}
+	
+	@ExceptionHandler(NoOrphansException.class)
+	public ResponseEntity <String> handleNoOrphansException(NoOrphansException e)
+	{
+		return new ResponseEntity <String> (e.getMessage(), HttpStatus.FORBIDDEN);
+	}
+	
+	@ExceptionHandler(UnrelatedEntityException.class)
+	public ResponseEntity <String> handleUnrelatedEntityException(UnrelatedEntityException e)
+	{
+		return new ResponseEntity <String> (e.getMessage(), HttpStatus.FORBIDDEN);
 	}
 }

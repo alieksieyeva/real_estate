@@ -2,6 +2,7 @@ package com.generation.REA.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.generation.REA.controller.util.InvalidEntityException;
+import com.generation.REA.controller.util.UnrelatedEntityException;
 import com.generation.REA.model.entities.Agent;
 import com.generation.REA.model.entities.House;
 import com.generation.REA.model.entities.dto.HouseDTO;
@@ -108,18 +110,23 @@ public class HouseController
 	}
 	
 	@GetMapping("/agents/{idPadre}/houses/{idFiglio}")
-	public HouseDTO getOneByAgent(@PathVariable Integer idPadre,@PathVariable Integer idFiglio)
-	{
-		//parametro mancante o di tipo sbagliato
-		//Padre non trovato o figlio non trovato, entrambi errore 404 ma con testo diverso
-		
-		HouseDTO res = new HouseDTO(repo.findById(idFiglio).get());
-		if(res.getAgent_id()!=idPadre)
-			return null;
-		
-		return res;
-	}
-	
+    public HouseDTO getOneByAgent(@PathVariable Integer idPadre,@PathVariable Integer idFiglio)
+    {
+        //parametro mancante o di tipo sbagliato
+        //Padre non trovato o figlio non trovato, entrambi errore 404 ma con testo diverso
+        if(aRepo.findById(idPadre).isEmpty())
+            throw new NoSuchElementException("questo agente non esiste sul db");
+
+        if(repo.findById(idFiglio).isEmpty())
+            throw new NoSuchElementException("questa casa non esiste sul db");
+
+        HouseDTO res = new HouseDTO(repo.findById(idFiglio).get());
+        if(res.getAgent_id()!=idPadre)
+            throw new UnrelatedEntityException("Casa ed agente non sono collegati");
+
+        return res;
+    }
+
 	@PutMapping("/agents/{idPadre}/houses/{idFiglio}")
 	public HouseDTO updateOneByAgent
 	(@PathVariable Integer idPadre,@PathVariable Integer idFiglio,@RequestBody HouseDTO dto)
@@ -150,10 +157,13 @@ public class HouseController
 	@PutMapping("/houses/{id}")
 	public House updateOne(@PathVariable int id,@RequestBody HouseDTO dto)
 	{
+		if(repo.findById(id).isEmpty())
+			throw new NoSuchElementException ("la casa da modificare non esiste nel db");
 		
-		//problemi parametri o casa da modificare non valida
 		dto.setId(id);
 		House toModify = dto.convertToHouse();
+		if(!toModify.isValid())
+			throw new InvalidEntityException("L'entita non valida");
 		return repo.save(toModify);
 	}
 	

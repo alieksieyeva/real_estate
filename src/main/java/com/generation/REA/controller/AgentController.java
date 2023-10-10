@@ -109,11 +109,13 @@ public class AgentController
 	public void deleteOne(@PathVariable int id)
 	{
 		//Agente non presente
-		
 		//Controllo aggiuntivo, possiamo cancellare agenti solo SE NON HANNO CASE FIGLIE
 		//nel caso un agente abbia case lanciare eccezione ForbiddenDeleteException (da creare) e dare come codice 403 (forbidden)
+		
 		if(aRepo.findById(id).isEmpty())
-			throw new NoSuchElementException("Non ho trovato su Db prodotto che vuoi cancellare");
+			throw new NoSuchElementException("Non ho trovato su Db agente che vuoi cancellare");
+		if(aRepo.findById(id).get().getCaseGestite().size()>0)
+			throw new NoOrphansException("Questo agente ha le case da gestire"); 
 		aRepo.deleteById(id);
 	}
 	

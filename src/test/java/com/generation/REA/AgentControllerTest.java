@@ -13,7 +13,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.generation.REA.model.entities.Agent;
 import com.generation.REA.model.entities.dto.agent.AgentDTONoList;
+import com.generation.REA.model.repository.AgentRepository;
 //impostiamo la classe di test
 //quale context applichiamo
 @SpringBootTest(
@@ -26,6 +28,10 @@ class AgentControllerTest
 
 	@Autowired
 	MockMvc mock;	//MockMvc classe di spring boot che permette di mandare le request e ricevere le response http
+	@Autowired
+	AgentRepository repo;
+	
+	
 	
 	@Test
 	void testGetOneAgent() throws Exception
@@ -95,6 +101,100 @@ class AgentControllerTest
 		
 	}
 	
+	
+	@Test
+	void testDeleteAgent() throws Exception
+	{
+		
+		Agent toDelete = new Agent();
+		
+		toDelete = repo.save(toDelete);
+		//agente trovato ed eliminato
+		mock.perform( MockMvcRequestBuilders
+			      .delete("/agents/"+toDelete.getId())							
+			      .contentType(MediaType.APPLICATION_JSON) )
+		     		.andExpect(status().isOk());		
+		
+		//agente c'è ma è padre forbidden
+		mock.perform( MockMvcRequestBuilders
+			      .delete("/agents/2")						
+			      .contentType(MediaType.APPLICATION_JSON)) 
+		     		.andExpect(status().isForbidden());
+		
+		//agente non trovato su db 404 no such element
+		mock.perform( MockMvcRequestBuilders
+			      .delete("/agents/9999")						
+			      .contentType(MediaType.APPLICATION_JSON)) 
+		     		.andExpect(status().isNotFound())  
+		     		.andExpect(MockMvcResultMatchers.content().string("Non ho trovato su Db agente che vuoi cancellare"));
+	}
+	
+	//Testa updateOne di HouseController
+	
+	@Test
+	void testUpdateHouse() throws Exception
+	{
+			mock.perform( MockMvcRequestBuilders
+			      .put("/houses/1")						
+			      .content(house1Json)				
+			      .contentType(MediaType.APPLICATION_JSON) 
+			      .accept(MediaType.APPLICATION_JSON))
+		     		.andExpect(status().isOk());
+			
+			mock.perform( MockMvcRequestBuilders
+				      .put("/houses/999")						
+				      .content(house1Json)				
+				      .contentType(MediaType.APPLICATION_JSON) 
+				      .accept(MediaType.APPLICATION_JSON))
+			     		.andExpect(status().isNotFound())
+			     		.andExpect(MockMvcResultMatchers.content().string("la casa da modificare non esiste nel db"));
+			
+			mock.perform( MockMvcRequestBuilders
+				      .put("/houses/1")						
+				      .content(house1JsonBrutto)				
+				      .contentType(MediaType.APPLICATION_JSON) 
+				      .accept(MediaType.APPLICATION_JSON))
+			     		.andExpect(status().isNotAcceptable())
+			     		.andExpect(MockMvcResultMatchers.content().string("L'entita non valida"));
+			
+		     		
+		
+	}
+	@Test
+    void getOneByAgent() throws Exception
+    {
+        mock.perform(MockMvcRequestBuilders.get("/agents/1/houses/3"))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(MockMvcResultMatchers.content().json(house1Json));
+
+
+        mock.perform(MockMvcRequestBuilders.get("/agents/paperino/houses/2"))
+        .andDo(print())
+        .andExpect(status().isBadRequest())
+        .andExpect(MockMvcResultMatchers.content().string("occhio al parametro"));
+
+        mock.perform(MockMvcRequestBuilders.get("/agents/2/houses/bhooo"))
+        .andDo(print())
+        .andExpect(status().isBadRequest())
+        .andExpect(MockMvcResultMatchers.content().string("occhio al parametro"));
+
+        mock.perform(MockMvcRequestBuilders.get("/agents/255/houses/2"))
+        .andDo(print())
+        .andExpect(status().isNotFound())
+        .andExpect(MockMvcResultMatchers.content().string("questo agente non esiste sul db"));
+
+        mock.perform(MockMvcRequestBuilders.get("/agents/2/houses/3453"))
+        .andDo(print())
+        .andExpect(status().isNotFound())
+        .andExpect(MockMvcResultMatchers.content().string("questa casa non esiste sul db"));
+
+        mock.perform(MockMvcRequestBuilders.get("/agents/1/houses/2"))
+        .andDo(print())
+        .andExpect(status().isForbidden())
+        .andExpect(MockMvcResultMatchers.content().string("Casa ed agente non sono collegati"));
+    }
+	
 	private static String asJsonString(Object obj)
 	{
 	    try 
@@ -106,6 +206,31 @@ class AgentControllerTest
 	        throw new RuntimeException(e);
 	    }
 	}
+	
+	String house1Json = 
+"{\r\n"
++ "    \"city\": \"Torino\",\r\n"
++ "    \"address\": \"Via Palermo 3\",\r\n"
++ "    \"type\": \"4rooms\",\r\n"
++ "    \"img_url\": \"no photo\",\r\n"
++ "    \"description\": \"beautiful house\",\r\n"
++ "    \"smp\": 3000,\r\n"
++ "    \"area\": 100.0,\r\n"
++ "    \"agent_id\": 1,\r\n"
++ "    \"totalPrice\": 300000.0\r\n"
++ "}";
+	
+	String house1JsonBrutto = 
+			"{    \"city\": \"Torino\",\r\n"
+			+ "    \"address\": \"Via Palermo 3\",\r\n"
+			+ "    \"type\": \"4rooms\",\r\n"
+			+ "    \"img_url\": \"no photo\",\r\n"
+			+ "    \"description\": \"casa modificata\",\r\n"
+			+ "    \"smp\": -3000,\r\n"
+			+ "    \"area\": 100.0,\r\n"
+			+ "    \"agent_id\": 1,\r\n"
+			+ "    \"totalPrice\": 300000.0}";
+	
 	
 	String agente1Json = "{\r\n"
 			+ "    \"id\": 1,\r\n"
