@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import com.generation.REA.model.entities.Agent;
 import com.generation.REA.model.entities.dto.agent.AgentDTOFull;
@@ -26,14 +28,21 @@ import com.generation.REA.controller.util.*;
 @RestController
 public class AgentController 
 {
-	//generici problemi con il DB per ogni metodo che usa le repository (TUTTI), errore codice 503 (service unavailable)
+	//generici problemi con il DB per ogni metodo che usa le repository(TUTTI), errore codice 503 (service unavailable)
 	
 	@Autowired
 	AgentRepository aRepo;
 	
+	
+	private List<AgentDTOFull> getAllAgentToDTOs()
+	{
+		return aRepo.findAll().stream().map(agent -> new AgentDTOFull(agent)).toList();
+	}
+	
 	@GetMapping("/agents")
 	public List<AgentDTOFull> getAll()
 	{
+		
 		return getAllAgentToDTOs();
 	}
 	
@@ -41,11 +50,6 @@ public class AgentController
 	public List<AgentDTOFull> getAllFull()
 	{
 		return getAllAgentToDTOs();
-	}
-	
-	private List<AgentDTOFull> getAllAgentToDTOs()
-	{
-		return aRepo.findAll().stream().map(agent -> new AgentDTOFull(agent)).toList();
 	}
 	
 	@GetMapping("/agents/nolist")
@@ -56,14 +60,17 @@ public class AgentController
 	
 	
 	@PostMapping("/agents")
-	public ResponseEntity<Object> insert(@RequestBody AgentDTONoList dto)
+	public AgentDTONoList insert(@RequestBody AgentDTONoList dto)
 	{
 		//problemi conversione JSON in dto, MethodArgumentTypeMismatchException, errore 400 (BAD REQUEST)
-		//agente da inserire non valido, InvalidEntityException, errore 400
+		//agente da inserire non valido, InvalidEntityException, errore 406
+		
 		Agent toInsert = dto.convertToAgent();
-		if(toInsert.isValid())
-			return new ResponseEntity<Object> (new AgentDTONoList(aRepo.save(toInsert)), HttpStatus.CREATED);
-		return new ResponseEntity<Object> ("non è andata bene", HttpStatus.BAD_REQUEST);
+		
+		if(!toInsert.isValid())
+			throw new InvalidEntityException("l'oggetto da inserire non è valido");
+			
+		return new AgentDTONoList(aRepo.save(toInsert));	
 		
 	}
 	
@@ -77,8 +84,8 @@ public class AgentController
 		if(aRepo.findById(id).isEmpty())
 			throw new NoSuchElementException("non ho trovato l'elemento che vuoi leggere");
 		
-		AgentDTOFull letto = new AgentDTOFull(aRepo.findById(id).get());
-		return letto;
+		return new AgentDTOFull(aRepo.findById(id).get());
+	
 	}
 	
 
